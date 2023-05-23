@@ -7,7 +7,7 @@ import (
 	"github.com/mariomac/distributed-service-example/worker/pkg/gprc"
 )
 
-var one = (&big.Int{}).SetInt64(1)
+var one = big.NewInt(1)
 
 type MultiplyServer struct {
 	gprc.MultiplierServer
@@ -16,7 +16,7 @@ type MultiplyServer struct {
 func (m *MultiplyServer) Loop(_ context.Context, request *gprc.LoopRequest) (*gprc.LoopResponse, error) {
 	start := &big.Int{}
 	start.SetBytes(request.From)
-	result := &*start
+	result := (&big.Int{}).Set(start)
 	end := &big.Int{}
 	end.SetBytes(request.To)
 	for start.Cmp(end) < 0 {
