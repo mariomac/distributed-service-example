@@ -8,8 +8,18 @@ services:
     image: example-backend
     ports: ["8080:8080"]
     environment:
-      WORKER_ADDRESS: "worker:5000"
-  worker:
+      WORKERS: 'worker-1:5000,worker-2:5000,worker-3:5000'
+  worker-1:
+    build:
+      context: ./worker/
+      dockerfile: Dockerfile
+    image: example-worker
+  worker-2:
+    build:
+      context: ./worker/
+      dockerfile: Dockerfile
+    image: example-worker
+  worker-3:
     build:
       context: ./worker/
       dockerfile: Dockerfile

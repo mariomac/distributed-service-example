@@ -10,8 +10,8 @@ import (
 )
 
 type Config struct {
-	Port          int    `env:"PORT" envDefault:"8080"`
-	WorkerAddress string `env:"WORKER_ADDRESS"`
+	Port    int      `env:"PORT" envDefault:"8080"`
+	Workers []string `env:"WORKERS"`
 }
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 	panicOnErr(env.Parse(&cfg))
 
 	mux := http.ServeMux{}
-	mux.Handle(rest.FactorialPath, rest.FactorialService(cfg.WorkerAddress, 4, 5*time.Minute))
+	mux.Handle(rest.FactorialPath, rest.FactorialService(cfg.Workers, 5*time.Minute))
 
 	err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), &mux)
 	panicOnErr(err)
