@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend/
+      dockerfile: Dockerfile
+    image: example-backend
+    ports: ["8080:8080"]
+    environment:
+      WORKER_ADDRESS: "worker:5000"
+  worker:
+    build:
+      context: ./worker/
+      dockerfile: Dockerfile
+    image: example-worker

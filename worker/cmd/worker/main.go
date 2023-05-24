@@ -11,7 +11,7 @@ import (
 )
 
 type Config struct {
-	Port int `env:"PORT" envDefault:"50000"`
+	Port int `env:"PORT" envDefault:"5000"`
 }
 
 func main() {
