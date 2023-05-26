@@ -37,6 +37,11 @@ services:
     image: mariomac/ebpf-autoinstrument:dev
     pid: "service:frontend"
     privileged: true
+    command:
+      - /otelauto
+      - --config=/configs/cfg.yaml
+    volumes:
+      - ./configs/:/configs
     env_file:
       - grafana.env
     environment:
@@ -46,6 +51,11 @@ services:
     image: mariomac/ebpf-autoinstrument:dev
     pid: "service:backend"
     privileged: true
+    command:
+      - /otelauto
+      - --config=/configs/cfg.yaml
+    volumes:
+      - ./configs/:/configs
     env_file:
       - grafana.env
     environment:

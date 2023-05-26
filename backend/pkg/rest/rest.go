@@ -71,7 +71,7 @@ func FactorialService(workers []string, timeout time.Duration) http.HandlerFunc 
 			select {
 			case res := <-resCh:
 				ires := (&big.Int{}).SetBytes(res.Result)
-				log.Printf("worker %d returned %s", i, ires.String())
+				log.Printf("worker %d returned", i)
 				result.Mul(result, ires)
 			case err := <-errsCh:
 				rw.WriteHeader(http.StatusInternalServerError)

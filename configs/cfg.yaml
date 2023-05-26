@@ -1,0 +1,5 @@
+routes:
+  patterns:
+    - /
+    - /submit
+    - /factorial/{number}
