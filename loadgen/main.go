@@ -3,15 +3,20 @@ package main
 import (
 	"io"
 	"log"
+	"math"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 const frontend = "http://localhost:8080"
 
 func main() {
+	avgMean := float64(250000)
+	meanDev := float64(200000)
+	dev := float64(50000)
 	for {
 		log.Println("requesting index")
 		resp, err := http.Get(frontend + "/")
@@ -20,14 +25,18 @@ func main() {
 			continue
 		}
 		_, _ = io.ReadAll(resp.Body)
-		num := getInt(5, 500000)
-		log.Println("sending form with number =", num)
+
+		mean := 5 + avgMean + math.Sin(float64(time.Now().Unix())/(20*60)) *meanDev
+		num := getInt(int(mean-dev), int(mean+dev))
+		log.Printf("(mean: %f) Sending form with number %d", mean, num)
+		start := time.Now()
 		resp, err = http.PostForm(frontend+"/submit", url.Values{"number": []string{strconv.Itoa(num)}})
 		if err != nil {
 			log.Println("ERROR:", err)
 			continue
 		}
 		_, _ = io.ReadAll(resp.Body)
+		log.Printf("took %d ms", time.Now().Sub(start).Milliseconds())
 	}
 }
 
