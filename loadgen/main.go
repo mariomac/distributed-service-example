@@ -26,7 +26,7 @@ func main() {
 		}
 		_, _ = io.ReadAll(resp.Body)
 
-		mean := 5 + avgMean + math.Sin(float64(time.Now().Unix())/(20*60)) *meanDev
+		mean := 5 + avgMean + math.Sin(float64(time.Now().Unix())*math.Pi/(20*60))*meanDev
 		num := getInt(int(mean-dev), int(mean+dev))
 		log.Printf("(mean: %f) Sending form with number %d", mean, num)
 		start := time.Now()
@@ -36,7 +36,7 @@ func main() {
 			continue
 		}
 		_, _ = io.ReadAll(resp.Body)
-		log.Printf("took %d ms", time.Now().Sub(start).Milliseconds())
+		log.Printf("%d took %d ms", resp.StatusCode, time.Now().Sub(start).Milliseconds())
 	}
 }
 

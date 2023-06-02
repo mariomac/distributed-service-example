@@ -70,6 +70,10 @@ func FactorialService(workers []string, timeout time.Duration) http.HandlerFunc 
 		for i := 0; i < awn; i++ {
 			select {
 			case res := <-resCh:
+				if res == nil || len(res.Result) == 0 {
+					rw.WriteHeader(http.StatusInternalServerError)
+					continue
+				}
 				ires := (&big.Int{}).SetBytes(res.Result)
 				log.Printf("worker %d returned", i)
 				result.Mul(result, ires)

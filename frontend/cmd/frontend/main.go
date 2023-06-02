@@ -4,7 +4,10 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"math"
+	"math/rand"
 	"net/http"
+	"strconv"
 
 	"github.com/caarlos0/env/v7"
 )
@@ -37,6 +40,13 @@ func main() {
 	mux.HandleFunc("/submit", func(rw http.ResponseWriter, req *http.Request) {
 		req.ParseForm()
 		input := req.FormValue("number")
+		// will simulate an internal error from time to time
+		nmbr, _ := strconv.Atoi(input)
+		if rand.Intn(int(math.Max(10.0, float64(nmbr/10)))) == 0 {
+			rw.WriteHeader(500 + rand.Intn(5))
+			return
+		}
+
 		resp, err := http.Get(cfg.Backend + "/factorial/" + input)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
