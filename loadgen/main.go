@@ -7,13 +7,17 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 )
 
-const frontend = "http://localhost:8080"
-
 func main() {
+	frontend := os.Getenv("FRONTEND")
+	if frontend == "" {
+		frontend = "http://localhost:8080"
+	}
+
 	avgMean := float64(250000)
 	meanDev := float64(200000)
 	dev := float64(50000)

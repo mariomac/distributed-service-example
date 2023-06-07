@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"math/rand"
 	"net/http"
@@ -43,17 +44,20 @@ func main() {
 		// will simulate an internal error from time to time
 		nmbr, _ := strconv.Atoi(input)
 		if rand.Intn(int(math.Max(10.0, float64(nmbr/10)))) == 0 {
+			log.Println("returning random error")
 			rw.WriteHeader(500 + rand.Intn(5))
 			return
 		}
 
 		resp, err := http.Get(cfg.Backend + "/factorial/" + input)
 		if err != nil {
+			log.Println("GET error ", err.Error())
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
 			return
 		}
 		if body, err := io.ReadAll(resp.Body); err != nil {
+			log.Println("Read error ", err.Error())
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
 		} else {
