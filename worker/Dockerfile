@@ -6,7 +6,7 @@ COPY . .
 
 RUN make compile
 
-FROM busybox:1.35-glibc
+FROM ubuntu:latest
 
 WORKDIR /
 COPY --from=builder /src/bin/worker /worker

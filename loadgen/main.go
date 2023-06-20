@@ -18,9 +18,9 @@ func main() {
 		frontend = "http://localhost:8080"
 	}
 
-	avgMean := float64(250000)
-	meanDev := float64(200000)
-	dev := float64(50000)
+	avgMean := float64(25000)
+	meanDev := float64(20000)
+	dev := float64(5000)
 	for {
 		log.Println("requesting index")
 		resp, err := http.Get(frontend + "/")
