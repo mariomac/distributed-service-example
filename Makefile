@@ -11,14 +11,25 @@ build-loadgen:
 	docker build -t $(IMG_BASE):loadgen loadgen/.
 build-all: build-backend build-frontend build-worker build-loadgen
 
-.PHONY: push-backend push-frontend push-worker push-loadgen push-all
-push-backend:
+.PHONY: push-backend-kind push-frontend-kind push-worker-kind push-loadgen-kind push-all-kind
+push-backend-kind:
 	kind load docker-image $(IMG_BASE):backend
-push-frontend:
+push-frontend-kind:
 	kind load docker-image $(IMG_BASE):frontend
-push-worker:
+push-worker-kind:
 	kind load docker-image $(IMG_BASE):worker
-push-loadgen:
+push-loadgen-kind:
 	kind load docker-image $(IMG_BASE):loadgen
-push-all: push-backend push-frontend push-worker push-loadgen
+push-all-kind: push-backend-kind push-frontend-kind push-worker-kind push-loadgen-kind
+
+.PHONY: push-backend-k3d push-frontend-k3d push-worker-k3d push-loadgen-k3d push-all-k3d
+push-backend-k3d:
+	k3d image import $(IMG_BASE):backend
+push-frontend-k3d:
+	k3d image import $(IMG_BASE):frontend
+push-worker-k3d:
+	k3d image import $(IMG_BASE):worker
+push-loadgen-k3d:
+	k3d image import $(IMG_BASE):loadgen
+push-all-k3d: push-backend-k3d push-frontend-k3d push-worker-k3d push-loadgen-k3d
 
