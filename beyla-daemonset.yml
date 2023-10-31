@@ -4,13 +4,19 @@ metadata:
   name: beyla-config
 data:
   beyla-config.yml: |
-    print_traces: true
-    log_level: debug
+    print_traces: false
+    log_level: info
     discovery:
       services:
         # just instrument any process opening a port
         # Beyla will decide automatically the service name
-        - exe_path_regexp: .
+        - exe_path_regexp: (worker)|(backend)|(frontend)
+          namespace: huge_factorial_calculator
+        - exe_path_regexp: loadgen
+          namespace: testing
+          name: "TestLoadGenerator"
+        # Uncomment the following line to instrument ALL the instrumentable processes in the cluster
+        # - exe_path_regexp: .
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -32,7 +38,7 @@ spec:
             name: beyla-config
       containers:
         - name: beyla
-          image: grafana/beyla:0.3.3
+          image: grafana/beyla:latest
           command: ["/beyla", "--config=/config/beyla-config.yml"]
           securityContext:
             privileged: true
@@ -41,6 +47,8 @@ spec:
             - mountPath: /config
               name: beyla-config
           env:
+            - name: OTEL_TRACE_SAMPLING_RATIO
+              value: "0.1"
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
               value: "http/protobuf"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
