@@ -4,19 +4,23 @@ metadata:
   name: beyla-config
 data:
   beyla-config.yml: |
-    print_traces: false
-    log_level: info
+    grafana:
+      otlp:
+        submit: ["metrics","traces"]
+    otel_traces_export:
+      sampler:
+        name: parentbased_traceidratio
+        arg: "0.01"
+    routes:
+      patterns:
+        - /factorial/{num}
     discovery:
       services:
-        # just instrument any process opening a port
-        # Beyla will decide automatically the service name
         - exe_path_regexp: (worker)|(backend)|(frontend)
           namespace: huge_factorial_calculator
         - exe_path_regexp: loadgen
           namespace: testing
           name: "TestLoadGenerator"
-        # Uncomment the following line to instrument ALL the instrumentable processes in the cluster
-        # - exe_path_regexp: .
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -38,7 +42,8 @@ spec:
             name: beyla-config
       containers:
         - name: beyla
-          image: grafana/beyla:latest
+          image: grafana/beyla:1.0
+          imagePullPolicy: IfNotPresent
           command: ["/beyla", "--config=/config/beyla-config.yml"]
           securityContext:
             privileged: true
@@ -47,10 +52,15 @@ spec:
             - mountPath: /config
               name: beyla-config
           env:
-            - name: OTEL_TRACE_SAMPLING_RATIO
-              value: "0.1"
-            - name: OTEL_EXPORTER_OTLP_PROTOCOL
-              value: "http/protobuf"
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://grafana-agent:4318"
-
+            - name: GRAFANA_OTLP_CLOUD_ZONE
+              value: prod-eu-west-0
+            - name: GRAFANA_OTLP_CLOUD_INSTANCE_ID
+              valueFrom:
+                secretKeyRef:
+                  key: grafana-user
+                  name: grafana-secret
+            - name: GRAFANA_OTLP_CLOUD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: grafana-api-key
+                  name: grafana-secret
