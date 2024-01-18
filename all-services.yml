@@ -131,5 +131,7 @@ spec:
     - name: loadgen
       image: mariomac/ds-example:loadgen
       env:
+        - name: "WAIT_TIME"
+          value: "5s"
         - name: "FRONTEND"
           value: "http://frontend:8080"

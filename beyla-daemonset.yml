@@ -3,17 +3,29 @@ kind: ServiceAccount
 metadata:
   name: beyla
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beyla-config
+data:
+  beyla-config.yml: |
+    routes:
+      unmatched: heuristic
+    discovery:
+      services:
+        - k8s_namespace: demo
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: beyla
 rules:
-  - apiGroups: ["apps"]
-    resources: ["replicasets"]
-    verbs: ["list", "watch"]
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["list", "watch"]
+  - apiGroups: [ "apps" ]
+    resources: [ "replicasets" ]
+    verbs: [ "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "pods" ]
+    verbs: [ "list", "watch" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -27,30 +39,6 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: beyla
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: beyla-config
-data:
-  beyla-config.yml: |
-    grafana:
-      otlp:
-        submit: ["metrics","traces"]
-    otel_traces_export:
-      sampler:
-        name: parentbased_traceidratio
-        arg: "0.01"
-    routes:
-      patterns:
-        - /factorial/{num}
-    discovery:
-      services:
-        - exe_path_regexp: (worker)|(backend)|(frontend)
-          namespace: huge_factorial_calculator
-        - exe_path_regexp: loadgen
-          namespace: testing
-          name: "TestLoadGenerator"
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -73,24 +61,22 @@ spec:
             name: beyla-config
       containers:
         - name: beyla
-          image: grafana/beyla:latest
+          image: grafana/beyla:1.2
           imagePullPolicy: IfNotPresent
-          command: ["/beyla", "--config=/config/beyla-config.yml"]
           securityContext:
             privileged: true
           volumeMounts:
             - mountPath: /config
               name: beyla-config
           env:
-            - name: GRAFANA_CLOUD_ZONE
-              value: prod-eu-west-0
-            - name: GRAFANA_CLOUD_INSTANCE_ID
+            - name: BEYLA_CONFIG_PATH
+              value: "/config/beyla-config.yml"
+            - name: BEYLA_KUBE_METADATA_ENABLE
+              value: "true"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "https://otlp-gateway-prod-eu-west-0.grafana.net/otlp"
+            - name: OTEL_EXPORTER_OTLP_HEADERS
               valueFrom:
                 secretKeyRef:
-                  key: grafana-user
-                  name: grafana-secret
-            - name: GRAFANA_CLOUD_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  key: grafana-api-key
+                  key: otlp-headers
                   name: grafana-secret

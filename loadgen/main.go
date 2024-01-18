@@ -18,6 +18,14 @@ func main() {
 		frontend = "http://localhost:8080"
 	}
 
+	waitTime, err := time.ParseDuration(os.Getenv("WAIT_TIME"))
+	if err != nil {
+		waitTime = 0
+		if os.Getenv("WAIT_TIME") != "" {
+			log.Printf("can't parse WAIT_TIME: %s. Assuming zero", err.Error())
+		}
+	}
+
 	avgMean := float64(25000)
 	meanDev := float64(20000)
 	dev := float64(5000)
@@ -41,6 +49,10 @@ func main() {
 		}
 		_, _ = io.ReadAll(resp.Body)
 		log.Printf("%d took %d ms", resp.StatusCode, time.Now().Sub(start).Milliseconds())
+		if waitTime > 0 {
+			log.Printf("waiting %s before the next invocation", waitTime)
+			time.Sleep(waitTime)
+		}
 	}
 }
 
