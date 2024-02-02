@@ -9,11 +9,12 @@ metadata:
   name: beyla-config
 data:
   beyla-config.yml: |
+    log_level: debug
     routes:
       unmatched: heuristic
-    discovery:
-      services:
-        - k8s_namespace: demo
+#    discovery:
+#      services:
+#        - k8s_namespace: demo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -24,7 +25,7 @@ rules:
     resources: [ "replicasets" ]
     verbs: [ "list", "watch" ]
   - apiGroups: [ "" ]
-    resources: [ "pods" ]
+    resources: [ "pods", "services", "nodes" ] ## services and nodes are required for network metrics
     verbs: [ "list", "watch" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -55,26 +56,44 @@ spec:
     spec:
       serviceAccountName: beyla
       hostPID: true  #important!
+      hostNetwork: true # important for network metrics!!
       volumes:
         - name: beyla-config
           configMap:
             name: beyla-config
+        - name: var-run-beyla
+          emptyDir: {}
       containers:
         - name: beyla
-          image: grafana/beyla:1.2
-          imagePullPolicy: IfNotPresent
+          image: docker.io/mariomac/beyla:dev
+          imagePullPolicy: Never
           securityContext:
             privileged: true
+            readOnlyRootFilesystem: true
           volumeMounts:
             - mountPath: /config
               name: beyla-config
+            - mountPath: /var/run/beyla
+              name: var-run-beyla
           env:
+            - name: BEYLA_NETWORK_SAMPLING
+              value: "50"
+            - name: BEYLA_NETWORK_METRICS
+              value: "network_connection_bytes"
+            - name: BEYLA_NETWORK_DEDUPER
+              value: "none"
+            - name: BEYLA_NETWORK_CACHE_MAX_FLOWS
+              value: "100000"
+            - name: BEYLA_NETWORK_CACHE_ACTIVE_TIMEOUT
+              value: "5s"
             - name: BEYLA_CONFIG_PATH
               value: "/config/beyla-config.yml"
             - name: BEYLA_KUBE_METADATA_ENABLE
               value: "true"
+            #            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            #              value: "https://otlp-gateway-prod-eu-west-0.grafana.net/otlp"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "https://otlp-gateway-prod-eu-west-0.grafana.net/otlp"
+              value: "https://otlp-gateway-dev-us-central-0.grafana-dev.net/otlp"
             - name: OTEL_EXPORTER_OTLP_HEADERS
               valueFrom:
                 secretKeyRef:
