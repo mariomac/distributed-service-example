@@ -3,6 +3,7 @@ package server
 import (
 	context "context"
 	"errors"
+	"log"
 	"math"
 	"math/big"
 	"math/rand"
@@ -25,6 +26,7 @@ func (m *MultiplyServer) Loop(_ context.Context, request *gprc.LoopRequest) (*gp
 	result := (&big.Int{}).Set(start)
 	end := &big.Int{}
 	end.SetBytes(request.To)
+	log.Printf("receiving request (%s, %s)", result.String(), end.String())
 	for start.Cmp(end) < 0 {
 		start.Add(start, one)
 		result.Mul(result, start)

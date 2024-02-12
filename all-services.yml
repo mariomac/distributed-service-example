@@ -71,7 +71,7 @@ spec:
               protocol: TCP
           env:
             - name: WORKERS
-              value: "worker:5000"
+              value: "worker:5000,worker:5000,worker:5000"
 ---
 apiVersion: v1
 kind: Service

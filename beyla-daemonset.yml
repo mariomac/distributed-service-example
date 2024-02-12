@@ -10,8 +10,8 @@ metadata:
 data:
   beyla-config.yml: |
     log_level: debug
-    routes:
-      unmatched: heuristic
+#    routes:
+#      unmatched: heuristic
 #    discovery:
 #      services:
 #        - k8s_namespace: demo
@@ -54,6 +54,10 @@ spec:
       labels:
         instrumentation: beyla
     spec:
+      # schedule also in master nodes
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
       serviceAccountName: beyla
       hostPID: true  #important!
       hostNetwork: true # important for network metrics!!
