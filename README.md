@@ -3,9 +3,19 @@ An example deployment and instrumentation of a distributed service that
 is automatically instrumented by Beyla.
 
 Requirements:
-* Local Kubernetes (use K3d, as Kind does not work well with Beyla as DaemonSet)
+* Local Kubernetes (Kind or K3d are fine)
 
 ## Run the test environment and services
+
+With Kind:
+
+```
+kind create cluster
+make build-all push-all-kind
+kubectl apply -f all-services.yml
+```
+
+With K3d:
 
 ```
 k3d cluster create
@@ -30,7 +40,6 @@ a finer-grained configuration by editing the `beyla-config` configmap
 that is inside the `beyla-daemonset.yml` file:
 
 ```
-kubectl apply -f grafana-agent.yml
 kubectl apply -f beyla-daemonset.yml
 ```
 
