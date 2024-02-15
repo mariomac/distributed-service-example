@@ -4,13 +4,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: demo
+  name: factorial
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: demo
+  namespace: factorial
 spec:
   selector:
     matchLabels:
@@ -37,7 +37,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend
-  namespace: demo
+  namespace: factorial
 spec:
   selector:
     app: frontend
@@ -50,7 +50,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
-  namespace: demo
+  namespace: factorial
 spec:
   selector:
     matchLabels:
@@ -71,13 +71,13 @@ spec:
               protocol: TCP
           env:
             - name: WORKERS
-              value: "worker:5000"
+              value: "worker:5000,worker:5000,worker:5000"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: backend
-  namespace: demo
+  namespace: factorial
 spec:
   selector:
     app: backend
@@ -90,7 +90,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: worker
-  namespace: demo
+  namespace: factorial
 spec:
   selector:
     matchLabels:
@@ -113,7 +113,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: worker
-  namespace: demo
+  namespace: factorial
 spec:
   selector:
     app: worker
@@ -122,10 +122,15 @@ spec:
       targetPort: grpc
 ---
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: test
+---
+apiVersion: v1
 kind: Pod
 metadata:
   name: loadgen
-  namespace: demo
+  namespace: test
 spec:
   containers:
     - name: loadgen
@@ -134,4 +139,4 @@ spec:
         - name: "WAIT_TIME"
           value: "5s"
         - name: "FRONTEND"
-          value: "http://frontend:8080"
+          value: "http://frontend.factorial:8080"

@@ -24,7 +24,7 @@ rules:
     resources: [ "replicasets" ]
     verbs: [ "list", "watch" ]
   - apiGroups: [ "" ]
-    resources: [ "pods" ]
+    resources: [ "pods", "services", "nodes" ] ## services and nodes are required for network metrics
     verbs: [ "list", "watch" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -53,15 +53,21 @@ spec:
       labels:
         instrumentation: beyla
     spec:
+      # schedule also in master nodes
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
       serviceAccountName: beyla
       hostPID: true  #important!
+      hostNetwork: true # important for network metrics!!
       volumes:
         - name: beyla-config
           configMap:
             name: beyla-config
       containers:
         - name: beyla
-          image: grafana/beyla:1.2
+#          image: grafana/beyla:1.2
+          image: docker.io/mariomac/beyla:beekeepers
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
@@ -69,12 +75,17 @@ spec:
             - mountPath: /config
               name: beyla-config
           env:
+#            - name: BEYLA_NETWORK_SAMPLING
+#              value: "50"
+            - name: BEYLA_NETWORK_METRICS
+              value: "true"
             - name: BEYLA_CONFIG_PATH
               value: "/config/beyla-config.yml"
             - name: BEYLA_KUBE_METADATA_ENABLE
               value: "true"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "https://otlp-gateway-prod-eu-west-0.grafana.net/otlp"
+#              value: "https://otlp-gateway-prod-eu-west-0.grafana.net/otlp"
+              value: "https://otlp-gateway-dev-us-central-0.grafana-dev.net/otlp"
             - name: OTEL_EXPORTER_OTLP_HEADERS
               valueFrom:
                 secretKeyRef:
