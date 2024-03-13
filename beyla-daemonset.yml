@@ -9,11 +9,16 @@ metadata:
   name: beyla-config
 data:
   beyla-config.yml: |
+    log_level: debug
+    print_traces: true
     routes:
+      patterns:
+        - /users/{id}/info
       unmatched: heuristic
     discovery:
       services:
         - k8s_namespace: demo
+        - k8s_namespace: blog
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -61,7 +66,7 @@ spec:
             name: beyla-config
       containers:
         - name: beyla
-          image: grafana/beyla:1.2
+          image: grafana/beyla:1.3
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
@@ -69,6 +74,8 @@ spec:
             - mountPath: /config
               name: beyla-config
           env:
+            - name: BEYLA_PROFILE_PORT
+              value: "6060"
             - name: BEYLA_CONFIG_PATH
               value: "/config/beyla-config.yml"
             - name: BEYLA_KUBE_METADATA_ENABLE
