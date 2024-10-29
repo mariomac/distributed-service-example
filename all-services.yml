@@ -7,15 +7,15 @@ metadata:
   name: demo
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
-  name: frontend
+  name: depl-frontend
   namespace: demo
 spec:
   selector:
     matchLabels:
       app: frontend
-  replicas: 1
+#  replicas: 1
   template:
     metadata:
       labels:
@@ -49,7 +49,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: depl-backend
   namespace: demo
 spec:
   selector:
@@ -89,7 +89,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: worker
+  name: depl-worker
   namespace: demo
 spec:
   selector:
@@ -124,7 +124,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: loadgen
+  name: pod-loadgen
   namespace: demo
 spec:
   containers:
@@ -132,6 +132,41 @@ spec:
       image: mariomac/ds-example:loadgen
       env:
         - name: "WAIT_TIME"
-          value: "5s"
+          value: "1s"
         - name: "FRONTEND"
           value: "http://frontend:8080"
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: java-http-service
+  namespace: demo
+spec:
+  selector:
+    matchLabels:
+      app: java-http-service
+  template:
+    metadata:
+      labels:
+        app: java-http-service
+    spec:
+      containers:
+        - name: java-http-service
+          image: jetty:9.4-jre8
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: java-http-service
+  namespace: demo
+spec:
+  selector:
+    app: java-http-service
+  ports:
+    - port: 8080
+      protocol: TCP
+      targetPort: http

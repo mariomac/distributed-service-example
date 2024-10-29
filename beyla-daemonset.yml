@@ -28,6 +28,33 @@ roleRef:
   kind: ClusterRole
   name: beyla
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beyla-config
+data:
+  beyla-config.yml: |
+    #    filter:
+    #      application:
+    #        client:
+    #          not_match: 'backend'
+    #        server:
+    #          not_match: 'backend'
+    # log_level: debug
+    # trace_printer: text
+    routes:
+      unmatched: heuristic
+    discovery:
+      services:
+        - k8s_namespace: demo
+    attributes:
+      kubernetes:
+        enable: true
+      select:
+        "*":
+          include: [ "*" ]
+          exclude: ["url_path"]
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -43,23 +70,34 @@ spec:
     spec:
       serviceAccountName: beyla
       hostPID: true  #important for app instrumentation
-      hostNetwork: true #important for network metrics
+#      hostNetwork: true #important for network metrics
       volumes:
         - name: beyla-config
           configMap:
             name: beyla-config
       containers:
         - name: beyla
-          image: grafana/beyla:1.5
+#          image: grafana/beyla:1.8
+          image: grafana/beyla:main
+#          image: docker.io/mariomac/beyla:dev
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
           volumeMounts:
             - mountPath: /config
               name: beyla-config
+          ports:
+            - containerPort: 9090
+              name: http
+            - containerPort: 6060
+              name: pprof
           env:
-            - name: BEYLA_PRINT_TRACES
-              value: "true"
+#            - name: BEYLA_LOG_LEVEL
+#              value: "debug"
+            #            - name: BEYLA_BPF_DEBUG
+            #              value: "true"
+#            - name: BEYLA_PRINT_TRACES
+#              value: "true"
             - name: BEYLA_PROFILE_PORT
               value: "6060"
             - name: BEYLA_CONFIG_PATH
@@ -73,21 +111,63 @@ spec:
                 secretKeyRef:
                   key: otlp-headers
                   name: grafana-secret
+            - name: BEYLA_OTEL_METRICS_FEATURES
+              value: "application,application_span,application_service_graph,network"
+            - name: BEYLA_PROMETHEUS_FEATURES
+              value: "application,application_span,application_service_graph,network"
+            - name: BEYLA_PROMETHEUS_PORT
+              value: "9090"
+            - name: BEYLA_PROMETHEUS_TTL
+              value: "1m"
+            - name: BEYLA_OTEL_METRICS_TTL
+              value: "1m"
+            - name: BEYLA_KUBE_META_CACHE_ADDRESS
+              value: "beyla-cache:50055"
+            - name: BEYLA_NETWORK_METRICS
+              value: "true"
 ---
+kind: Service
 apiVersion: v1
-kind: ConfigMap
 metadata:
-  name: beyla-config
-data:
-  beyla-config.yml: |
-    #    network:
-    #      enable: true
-    discovery:
-      services:
-        - k8s_namespace: demo
-        - k8s_namespace: blog
-    routes:
-      unmatched: heuristic
-    attributes:
-      kubernetes:
-        enable: true
+  name: beyla
+spec:
+  selector:
+    instrumentation: "beyla"
+  ports:
+    - port: 9090
+      protocol: TCP
+      targetPort: http
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: beyla-cache
+spec:
+  selector:
+    matchLabels:
+      instrumentation: beyla-cache
+  template:
+    metadata:
+      labels:
+        instrumentation: beyla-cache
+    spec:
+      serviceAccountName: beyla
+      containers:
+        - name: beyla-cache
+          image: grafana/beyla-k8s-cache:main
+          ports:
+            - containerPort: 50055
+              protocol: TCP
+              name: protobuf
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: beyla-cache
+spec:
+  selector:
+    instrumentation: "beyla-cache"
+  ports:
+    - port: 50055
+      protocol: TCP
+      targetPort: protobuf

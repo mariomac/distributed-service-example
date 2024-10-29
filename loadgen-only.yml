@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: loadgen
+  namespace: default
+spec:
+  containers:
+    - name: loadgen
+      image: mariomac/ds-example:loadgen
+      env:
+        - name: "WAIT_TIME"
+          value: "5s"
+        - name: "FRONTEND"
+          value: "http://frontend.demo:8080"

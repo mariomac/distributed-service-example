@@ -1,0 +1,9 @@
+appVersion: 1.6.3
+config:
+  data:
+    attributes:
+      kubernetes:
+        enable: true
+    discovery:
+      services:
+        - k8s_namespace: .
