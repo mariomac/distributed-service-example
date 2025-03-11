@@ -42,11 +42,13 @@ data:
     #          not_match: 'backend'
     # log_level: debug
     # trace_printer: text
-    routes:
-      unmatched: heuristic
-    discovery:
-      services:
-        - k8s_namespace: demo
+    # routes:
+    #   unmatched: heuristic
+    # discovery:
+      # allow_self_instrumentation: true
+      # services:
+      #   - k8s_daemonset_name: beyla
+      #   - k8s_namespace: demo
     attributes:
       kubernetes:
         enable: true
@@ -70,17 +72,17 @@ spec:
     spec:
       serviceAccountName: beyla
       hostPID: true  #important for app instrumentation
-#      hostNetwork: true #important for network metrics
+      hostNetwork: true #important for network metrics
       volumes:
         - name: beyla-config
           configMap:
             name: beyla-config
       containers:
         - name: beyla
-#          image: grafana/beyla:1.8
+#          image: grafana/beyla:1.9
           image: grafana/beyla:main
-#          image: docker.io/mariomac/beyla:dev
-          imagePullPolicy: IfNotPresent
+          #image: docker.io/mariomac/beyla:dev
+          imagePullPolicy: Always
           securityContext:
             privileged: true
           volumeMounts:
@@ -92,8 +94,8 @@ spec:
             - containerPort: 6060
               name: pprof
           env:
-#            - name: BEYLA_LOG_LEVEL
-#              value: "debug"
+            # - name: BEYLA_LOG_LEVEL
+            #   value: "debug"
             #            - name: BEYLA_BPF_DEBUG
             #              value: "true"
 #            - name: BEYLA_PRINT_TRACES
@@ -112,19 +114,30 @@ spec:
                   key: otlp-headers
                   name: grafana-secret
             - name: BEYLA_OTEL_METRICS_FEATURES
-              value: "application,application_span,application_service_graph,network"
-            - name: BEYLA_PROMETHEUS_FEATURES
-              value: "application,application_span,application_service_graph,network"
+              value: "network,network_inter_zone"
             - name: BEYLA_PROMETHEUS_PORT
               value: "9090"
+            - name: BEYLA_PROMETHEUS_FEATURES
+              value: "network,network_inter_zone"
+              #value: "application,application_span,application_service_graph,network"
+            # - name: BEYLA_PROMETHEUS_FEATURES
+            #   value: "application,application_span,application_service_graph,network"
+            # - name: BEYLA_PROMETHEUS_PORT
+            #   value: "9090"
             - name: BEYLA_PROMETHEUS_TTL
               value: "1m"
             - name: BEYLA_OTEL_METRICS_TTL
               value: "1m"
-            - name: BEYLA_KUBE_META_CACHE_ADDRESS
-              value: "beyla-cache:50055"
-            - name: BEYLA_NETWORK_METRICS
-              value: "true"
+            - name: OTEL_METRIC_EXPORT_INTERVAL
+              value: "10000"
+            - name: BEYLA_KUBE_CLUSTER_NAME
+              value: "my-local-cluster"
+            # - name: BEYLA_KUBE_META_CACHE_ADDRESS
+            #   value: "k8s-cache:50055"
+            # - name: BEYLA_NETWORK_METRICS
+            #   value: "true"
+          resources: {}
+            
 ---
 kind: Service
 apiVersion: v1
@@ -137,37 +150,51 @@ spec:
     - port: 9090
       protocol: TCP
       targetPort: http
----
-kind: Deployment
-apiVersion: apps/v1
-metadata:
-  name: beyla-cache
-spec:
-  selector:
-    matchLabels:
-      instrumentation: beyla-cache
-  template:
-    metadata:
-      labels:
-        instrumentation: beyla-cache
-    spec:
-      serviceAccountName: beyla
-      containers:
-        - name: beyla-cache
-          image: grafana/beyla-k8s-cache:main
-          ports:
-            - containerPort: 50055
-              protocol: TCP
-              name: protobuf
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: beyla-cache
-spec:
-  selector:
-    instrumentation: "beyla-cache"
-  ports:
-    - port: 50055
-      protocol: TCP
-      targetPort: protobuf
+# ---
+# kind: Deployment
+# apiVersion: apps/v1
+# metadata:
+#   name: k8s-cache
+# spec:
+#   selector:
+#     matchLabels:
+#       instrumentation: k8s-cache
+#   template:
+#     metadata:
+#       labels:
+#         instrumentation: k8s-cache
+#     spec:
+
+#       serviceAccountName: beyla
+#       containers:
+#         - name: k8s-cache
+#           image: grafana/beyla-k8s-cache:main
+#           ports:
+#             - containerPort: 50055
+#               protocol: TCP
+#               name: protobuf
+#             - containerPort: 6060
+#               protocol: TCP
+#               name: profile
+#             - containerPort: 9090
+#               protocol: TCP
+#               name: metrics
+#           env:
+# #            - name: BEYLA_K8S_CACHE_LOG_LEVEL
+# #              value: "debug"
+#             - name: BEYLA_K8S_CACHE_PROFILE_PORT
+#               value: "6060"
+#             - name: BEYLA_K8S_CACHE_INTERNAL_METRICS_PROMETHEUS_PORT
+#               value: "9090"
+# ---
+# kind: Service
+# apiVersion: v1
+# metadata:
+#   name: k8s-cache
+# spec:
+#   selector:
+#     instrumentation: "k8s-cache"
+#   ports:
+#     - port: 50055
+#       protocol: TCP
+#       targetPort: protobuf

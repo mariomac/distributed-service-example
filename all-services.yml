@@ -9,7 +9,7 @@ metadata:
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: depl-frontend
+  name: frontend
   namespace: demo
 spec:
   selector:
@@ -18,13 +18,17 @@ spec:
 #  replicas: 1
   template:
     metadata:
+      annotations:
+        resource.opentelemetry.io/service.name: "my-frontend"
+        resource.opentelemetry.io/service.namespace: "ecommerce"
+        resource.opentelemetry.io/deployment.environment: "staging"
       labels:
         app: frontend
         grafana.com/instrument-port: "8080"
     spec:
       containers:
         - name: frontend
-          image: mariomac/ds-example:frontend
+          image: mariomac/ds-frontend
           ports:
             - containerPort: 8080
               name: http
@@ -32,6 +36,7 @@ spec:
           env:
             - name: BACKEND
               value: http://backend:8080
+
 ---
 apiVersion: v1
 kind: Service
@@ -49,7 +54,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: depl-backend
+  name: backend
   namespace: demo
 spec:
   selector:
@@ -61,10 +66,14 @@ spec:
       labels:
         app: backend
         grafana.com/instrument-port: "8080"
+      annotations:
+        resource.opentelemetry.io/service.name: "my-backend"
+        resource.opentelemetry.io/service.namespace: "ecommerce"
+        resource.opentelemetry.io/deployment.environment: "staging"
     spec:
       containers:
         - name: frontend
-          image: mariomac/ds-example:backend
+          image: mariomac/ds-backend
           ports:
             - containerPort: 8080
               name: http
@@ -89,7 +98,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: depl-worker
+  name: worker
   namespace: demo
 spec:
   selector:
@@ -104,7 +113,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: mariomac/ds-example:worker
+          image: mariomac/ds-worker
           ports:
             - containerPort: 5000
               name: grpc
@@ -129,44 +138,9 @@ metadata:
 spec:
   containers:
     - name: loadgen
-      image: mariomac/ds-example:loadgen
+      image: mariomac/ds-loadgen
       env:
         - name: "WAIT_TIME"
           value: "1s"
         - name: "FRONTEND"
           value: "http://frontend:8080"
----
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: java-http-service
-  namespace: demo
-spec:
-  selector:
-    matchLabels:
-      app: java-http-service
-  template:
-    metadata:
-      labels:
-        app: java-http-service
-    spec:
-      containers:
-        - name: java-http-service
-          image: jetty:9.4-jre8
-          ports:
-            - containerPort: 8080
-              name: http
-              protocol: TCP
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: java-http-service
-  namespace: demo
-spec:
-  selector:
-    app: java-http-service
-  ports:
-    - port: 8080
-      protocol: TCP
-      targetPort: http
