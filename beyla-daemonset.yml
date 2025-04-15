@@ -12,8 +12,8 @@ rules:
     resources: [ "replicasets" ]
     verbs: [ "list", "watch" ]
   - apiGroups: [ "" ]
-    resources: [ "pods", "services", "nodes" ]
-    verbs: [ "list", "watch" ]
+    resources: [ "pods", "services", "nodes", "configmaps"]
+    verbs: [ "list", "watch", "get" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -44,11 +44,9 @@ data:
     # trace_printer: text
     # routes:
     #   unmatched: heuristic
-    # discovery:
-      # allow_self_instrumentation: true
-      # services:
-      #   - k8s_daemonset_name: beyla
-      #   - k8s_namespace: demo
+    discovery:
+      services:
+       - k8s_namespace: demo
     attributes:
       kubernetes:
         enable: true
@@ -79,8 +77,8 @@ spec:
             name: beyla-config
       containers:
         - name: beyla
-#          image: grafana/beyla:1.9
-          image: grafana/beyla:main
+#          image: grafana/beyla:2
+          image: docker.io/mariomac/beyla:dev
           #image: docker.io/mariomac/beyla:dev
           imagePullPolicy: Always
           securityContext:
@@ -94,8 +92,8 @@ spec:
             - containerPort: 6060
               name: pprof
           env:
-            # - name: BEYLA_LOG_LEVEL
-            #   value: "debug"
+            - name: BEYLA_LOG_LEVEL
+              value: "debug"
             #            - name: BEYLA_BPF_DEBUG
             #              value: "true"
 #            - name: BEYLA_PRINT_TRACES
@@ -114,11 +112,11 @@ spec:
                   key: otlp-headers
                   name: grafana-secret
             - name: BEYLA_OTEL_METRICS_FEATURES
-              value: "network,network_inter_zone"
+              value: "application,application_span,application_service_graph,network"
             - name: BEYLA_PROMETHEUS_PORT
               value: "9090"
-            - name: BEYLA_PROMETHEUS_FEATURES
-              value: "network,network_inter_zone"
+#            - name: BEYLA_PROMETHEUS_FEATURES
+#              value: "network,network_inter_zone"
               #value: "application,application_span,application_service_graph,network"
             # - name: BEYLA_PROMETHEUS_FEATURES
             #   value: "application,application_span,application_service_graph,network"
@@ -130,8 +128,8 @@ spec:
               value: "1m"
             - name: OTEL_METRIC_EXPORT_INTERVAL
               value: "10000"
-            - name: BEYLA_KUBE_CLUSTER_NAME
-              value: "my-local-cluster"
+#            - name: BEYLA_KUBE_CLUSTER_NAME
+#              value: "my-local-cluster"
             # - name: BEYLA_KUBE_META_CACHE_ADDRESS
             #   value: "k8s-cache:50055"
             # - name: BEYLA_NETWORK_METRICS

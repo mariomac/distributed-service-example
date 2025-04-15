@@ -2,3 +2,4 @@
 grafana.env
 grafana-credentials.yml
 grafana-credentials-*.yml
+beyla-link/**

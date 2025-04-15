@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: mariomac/ds-example:frontend
+          image: mariomac/ds-example-frontend
           ports:
             - containerPort: 8080
               name: http
@@ -75,7 +75,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: mariomac/ds-example:backend
+          image: mariomac/ds-example-backend
           ports:
             - containerPort: 8080
               name: http
@@ -116,7 +116,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: mariomac/ds-example:worker
+          image: mariomac/ds-example-worker
           ports:
             - containerPort: 5000
               name: grpc
@@ -143,7 +143,7 @@ metadata:
 spec:
   containers:
     - name: loadgen
-      image: mariomac/ds-example:loadgen
+      image: mariomac/ds-example-loadgen
       env:
         - name: "WAIT_TIME"
           value: "1s"

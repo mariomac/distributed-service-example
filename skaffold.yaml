@@ -1,0 +1,38 @@
+apiVersion: skaffold/v4beta12
+kind: Config
+metadata:
+  name: beyla-dev
+build:
+  artifacts:
+    - image: grafana/beyla-skaffold
+      # ln -s ~/code/beyla beyla-link
+      context: beyla-link/.
+      docker:
+        dockerfile: ./Dockerfile
+    - image: mariomac/ds-example-backend
+      context: backend/.
+      docker:
+        dockerfile: ./Dockerfile
+    - image: mariomac/ds-example-frontend
+      context: frontend/.
+      docker:
+        dockerfile: ./Dockerfile
+    - image: mariomac/ds-example-worker
+      context: worker/.
+      docker:
+        dockerfile: ./Dockerfile
+    - image: mariomac/ds-example-loadgen
+      context: loadgen/.
+      docker:
+          dockerfile: ./Dockerfile
+manifests:
+  rawYaml:
+    - grafana-credentials.yml
+    - skaffold-ds.yml
+    - skaffold-services.yml
+portForward:
+  - localPort: 9090
+    port: 9090
+    resourceType: service
+    resourceName: beyla
+    namespace: default
