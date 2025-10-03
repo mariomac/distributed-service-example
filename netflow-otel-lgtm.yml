@@ -1,0 +1,191 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: netflow
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: otel-collector-config
+  namespace: netflow
+data:
+  config.yaml: |
+    receivers:
+      netflow:
+        scheme: netflow
+        port: 2055
+    processors:
+      batch:
+        send_batch_size: 2000
+        timeout: 30s
+    exporters:
+      debug:
+        verbosity: detailed
+      otlp:
+        endpoint: lgtm.netflow.svc.cluster.local:4317
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        logs:
+          receivers: [netflow]
+          processors: [batch]
+          exporters: [debug, otlp]
+      telemetry:
+        logs:
+          level: debug
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  namespace: netflow
+  name: otel-collector
+  labels:
+    app: opentelemetry
+    component: otel-collector
+spec:
+  selector:
+    matchLabels:
+      app: opentelemetry
+      component: otel-collector
+  template:
+    metadata:
+      labels:
+        app: opentelemetry
+        component: otel-collector
+    spec:
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.136.0
+          ports:
+            - containerPort: 2055
+              protocol: UDP
+              name: netflow
+          resources:
+            limits:
+              cpu: 100m
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 200Mi
+          volumeMounts:
+            - mountPath: /var/log
+              name: varlog
+              readOnly: true
+            - mountPath: /var/lib/docker/containers
+              name: varlibdockercontainers
+              readOnly: true
+            - mountPath: /etc/otelcol-contrib/config.yaml
+              name: data
+              subPath: config.yaml
+              readOnly: true
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: varlibdockercontainers
+          hostPath:
+            path: /var/lib/docker/containers
+        - name: data
+          configMap:
+            name: otel-collector-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: netflow
+  labels:
+    app: opentelemetry
+    component: otel-collector
+spec:
+  ports:
+    - name: netflow
+      protocol: UDP
+      port: 2055
+      targetPort: 2055
+  selector:
+    app: opentelemetry
+    component: otel-collector
+---
+# this is intended for demo / testing purposes only, not for production usage
+apiVersion: v1
+kind: Service
+metadata:
+  name: lgtm
+  namespace: netflow
+spec:
+  selector:
+    app: lgtm
+  ports:
+    - name: grafana
+      protocol: TCP
+      port: 3000
+      targetPort: 3000
+    - name: otel-grpc
+      protocol: TCP
+      port: 4317
+      targetPort: 4317
+    - name: otel-http
+      protocol: TCP
+      port: 4318
+      targetPort: 4318
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lgtm
+  namespace: netflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lgtm
+  template:
+    metadata:
+      labels:
+        app: lgtm
+    spec:
+      containers:
+        - name: lgtm
+          image: grafana/otel-lgtm:latest
+          ports:
+            - containerPort: 3000
+            - containerPort: 4317
+            - containerPort: 4318
+          readinessProbe:
+            exec:
+              command:
+                - cat
+                - /tmp/ready
+          # NOTE: By default OpenShift does not allow writing the root directory.
+          # Thats why the data dirs for grafana, prometheus and loki can not be
+          # created and the pod never becomes ready.
+          # See: https://github.com/grafana/docker-otel-lgtm/issues/132
+          volumeMounts:
+            - name: tempo-data
+              mountPath: /data/tempo
+            - name: grafana-data
+              mountPath: /data/grafana
+            - name: loki-data
+              mountPath: /data/loki
+            - name: loki-storage
+              mountPath: /loki
+            - name: p8s-storage
+              mountPath: /data/prometheus
+            - name: pyroscope-storage
+              mountPath: /data/pyroscope
+      volumes:
+        - name: tempo-data
+          emptyDir: {}
+        - name: loki-data
+          emptyDir: {}
+        - name: grafana-data
+          emptyDir: {}
+        - name: loki-storage
+          emptyDir: {}
+        - name: p8s-storage
+          emptyDir: {}
+        - name: pyroscope-storage
+          emptyDir: {}

@@ -1,0 +1,55 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beyla-config
+  namespace: netflow
+data:
+  beyla-config.yml: |
+    attributes:
+      kubernetes:
+        enable: false
+      select:
+        "*":
+          include: [ "*" ]
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: beyla
+  namespace: netflow
+spec:
+  selector:
+    matchLabels:
+      instrumentation: beyla
+  template:
+    metadata:
+      labels:
+        instrumentation: beyla
+    spec:
+      hostNetwork: true #important for network metrics
+      dnsPolicy: ClusterFirstWithHostNet
+      volumes:
+        - name: beyla-config
+          configMap:
+            name: beyla-config
+      containers:
+        - name: beyla
+          image: docker.io/mariomac/beyla:netflow
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /config
+              name: beyla-config
+          env:
+            - name: BEYLA_CONFIG_PATH
+              value: "/config/beyla-config.yml"
+            - name: BEYLA_LOG_LEVEL
+              value: "debug"
+            - name: BEYLA_NETFLOW_COLLECTOR_ADDRESS
+              value: "otel-collector.netflow.svc.cluster.local:2055"
+            - name: BEYLA_NETFLOW_COLLECTOR_TRANSPORT
+              value: "udp"
+          resources: { }
+
