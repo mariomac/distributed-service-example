@@ -36,8 +36,6 @@ data:
   beyla-config.yml: |
     # log_level: debug
     trace_printer: text
-    network:
-      enable: true
     discovery:
       services:
         - k8s_namespace: demo
@@ -95,7 +93,7 @@ spec:
             - name: BEYLA_LOG_LEVEL
               value: "debug"
             - name: BEYLA_PROMETHEUS_FEATURES
-              value: "network"
+              value: "application,application_process"
 #            - name: BEYLA_KUBE_CLUSTER_NAME
 #              value: "my-local-cluster"
             - name: BEYLA_NETWORK_REVERSE_DNS_TYPE
@@ -108,7 +106,7 @@ spec:
                   key: otlp-headers
                   name: grafana-secret
             - name: BEYLA_OTEL_METRICS_FEATURES
-              value: "network"
+              value: "application,application_process"
 #            - name: BEYLA_NETWORK_DEDUPER
 #              value: "none"
           resources: {}

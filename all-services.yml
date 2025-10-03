@@ -36,7 +36,7 @@ spec:
               protocol: TCP
           env:
             - name: BACKEND
-              value: http://backend:8080
+              value: http://backend-svc:8080
 
 ---
 apiVersion: v1
@@ -69,12 +69,12 @@ spec:
         app: backend
         grafana.com/instrument-port: "8080"
       annotations:
-        resource.opentelemetry.io/service.name: "my-backend"
-        resource.opentelemetry.io/service.namespace: "ecommerce"
+#        resource.opentelemetry.io/service.name: "my-backend"
+#        resource.opentelemetry.io/service.namespace: "ecommerce"
         resource.opentelemetry.io/deployment.environment: "staging"
     spec:
       containers:
-        - name: frontend
+        - name: backend
           image: mariomac/ds-example:backend
           ports:
             - containerPort: 8080
@@ -82,12 +82,14 @@ spec:
               protocol: TCP
           env:
             - name: WORKERS
-              value: "worker:5000"
+              value: "worker-svc:5000"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=my-backend,service.namespace=ecommerce"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend
+  name: backend-svc
   namespace: demo
 spec:
   selector:
@@ -113,9 +115,13 @@ spec:
         instrument: beyla
         app: worker
         grafana.com/instrument-port: "5000"
+      annotations:
+        resource.opentelemetry.io/service.name: "my-worker"
+        resource.opentelemetry.io/service.namespace: "ecommerce"
+        resource.opentelemetry.io/deployment.environment: "staging"
     spec:
       containers:
-        - name: frontend
+        - name: worker
           image: mariomac/ds-example:worker
           ports:
             - containerPort: 5000
@@ -124,7 +130,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: worker
+  name: worker-svc
   namespace: demo
 spec:
   selector:
@@ -140,6 +146,10 @@ metadata:
   namespace: demo
   labels:
     instrument: beyla
+  annotations:
+    resource.opentelemetry.io/service.name: "my-loadgen"
+    resource.opentelemetry.io/service.namespace: "ecommerce"
+    resource.opentelemetry.io/deployment.environment: "staging"
 spec:
   containers:
     - name: loadgen
