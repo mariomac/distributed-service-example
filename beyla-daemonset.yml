@@ -67,9 +67,13 @@ spec:
         - name: beyla-config
           configMap:
             name: beyla-config
+        # - name: machine-id
+        #   hostPath:
+        #     path: /etc/machine-id
+        #     type: File
       containers:
         - name: beyla
-          # image: grafana/beyla:2.6
+          # image: grafana/beyla:3.11.0
           image: docker.io/mariomac/beyla:dev
           imagePullPolicy: Never
           securityContext:
@@ -77,6 +81,9 @@ spec:
           volumeMounts:
             - mountPath: /config
               name: beyla-config
+            # - mountPath: /etc/machine-id
+            #   name: machine-id
+            #   readOnly: true
           ports:
             - containerPort: 2345
               hostPort: 2345
@@ -110,7 +117,7 @@ spec:
             - name: BEYLA_PROMETHEUS_PORT
               value: "9090"
             - name: BEYLA_PROMETHEUS_FEATURES
-              value: "application"
+              value: "application,application_host"
             - name: BEYLA_PROMETHEUS_TTL
               value: "1m"
             - name: BEYLA_OTEL_METRICS_TTL

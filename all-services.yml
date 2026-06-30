@@ -15,7 +15,7 @@ spec:
   selector:
     matchLabels:
       app: frontend
-#  replicas: 1
+  replicas: 2
   template:
     metadata:
       annotations:
@@ -61,7 +61,7 @@ spec:
   selector:
     matchLabels:
       app: backend
-  replicas: 1
+  replicas: 2
   template:
     metadata:
       labels:

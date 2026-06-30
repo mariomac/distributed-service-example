@@ -40,15 +40,20 @@ data:
     #          not_match: 'backend'
     #        server:
     #          not_match: 'backend'
-    # log_level: debug
     # trace_printer: text
     # routes:
     #   unmatched: heuristic
+    ebpf:
+      context_propagation: all
+      traffic_control_backend: tcx
+      track_request_headers: true
     discovery:
-      services:
-       - k8s_namespace: demo
+      instrument:
+       - k8s_namespace: "*"
       survey:
       - k8s_namespace: "*"
+    network:
+      enable: true
     attributes:
       kubernetes:
         enable: true
@@ -79,10 +84,10 @@ spec:
             name: obi-config
       containers:
         - name: obi
-#          image: otel/ebpf-instrument:main
-#          imagePullPolicy: IfNotPresent
-          image: mariomac/obi:dev
-          imagePullPolicy: Never
+          image: otel/ebpf-instrument:main
+          imagePullPolicy: IfNotPresent
+          # image: obi:dev
+          # imagePullPolicy: Never
           securityContext:
             privileged: true
           volumeMounts:
@@ -96,12 +101,18 @@ spec:
             - containerPort: 6060
               name: pprof
           env:
+            - name: OTEL_EBPF_LOG_LEVEL
+              value: "debug"
+            - name: OTEL_EBPF_NETWORK_CACHE_MAX_FLOWS
+              value: "2"
+            - name: OTEL_EBPF_NETWORK_CACHE_ACTIVE_TIMEOUT
+              value: "60s"
             - name: OTEL_EBPF_KUBE_CLUSTER_NAME
               value: kind-cluster
-            - name: OTEL_EBPF_LOG_LEVEL
-              value: "info"
-            #            - name: OTEL_EBPF_BPF_DEBUG
-            #              value: "true"
+            # - name: OTEL_EBPF_LOG_LEVEL
+            #   value: "debug"
+            # - name: OTEL_EBPF_BPF_DEBUG
+            #   value: "true"
 #            - name: OTEL_EBPF_PRINT_TRACES
 #              value: "true"
             - name: OTEL_EBPF_PROFILE_PORT
@@ -112,29 +123,31 @@ spec:
               value: "/config/obi-config.yml"
             - name: OTEL_EBPF_KUBE_METADATA_ENABLE
               value: "true"
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "https://otlp-gateway-prod-eu-west-0.grafana.net/otlp"
-            - name: OTEL_EXPORTER_OTLP_HEADERS
-              valueFrom:
-                secretKeyRef:
-                  key: otlp-headers
-                  name: grafana-secret
+            - name: OTEL_EBPF_TRACE_PRINTER
+              value: "json"
+            # - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            #   value: "https://otlp-gateway-prod-eu-west-0.grafana.net/otlp"
+            # - name: OTEL_EXPORTER_OTLP_HEADERS
+            #   valueFrom:
+            #     secretKeyRef:
+            #       key: otlp-headers
+            #       name: grafana-secret
             - name: OTEL_EBPF_METRICS_FEATURES
-              value: "application,application_span,application_service_graph"
+              value: "application,application_span,application_service_graph,application_host"
 #              value: "application,application_span,application_service_graph,network"
             - name: OTEL_EBPF_PROMETHEUS_PORT
               value: "9090"
             - name: OTEL_EBPF_PROMETHEUS_FEATURES
 #              value: "application_service_graph"
-              value: "application"
+              value: "application,application_host"
             - name: OTEL_EBPF_PROMETHEUS_TTL
               value: "1m"
             - name: OTEL_EBPF_METRICS_TTL
               value: "1m"
             - name: OTEL_METRIC_EXPORT_INTERVAL
               value: "10000"
-            - name: OTEL_EBPF_KUBE_META_CACHE_ADDRESS
-              value: "k8s-cache:50055"
+            # - name: OTEL_EBPF_KUBE_META_CACHE_ADDRESS
+            #   value: "k8s-cache:50055"
             - name: OTEL_EBPF_INTERNAL_METRICS_EXPORTER
               value: "prometheus"
             - name: OTEL_EBPF_INTERNAL_METRICS_PROMETHEUS_PORT
